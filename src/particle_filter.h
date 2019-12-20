@@ -11,7 +11,10 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 #include "helper_functions.h"
+
+using namespace std::chrono; 
 
 struct Particle {
   int id;

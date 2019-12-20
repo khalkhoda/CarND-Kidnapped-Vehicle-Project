@@ -17,7 +17,6 @@
 #include <vector>
 #include <cstring>
 #include <stdio.h>
-
 #include "helper_functions.h"
 
 using std::string;
@@ -37,7 +36,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *   (and others in this file).
    */
   std::default_random_engine gen;
-  num_particles = 10;  // TODO: Set the number of particles
+  num_particles = 100;  // TODO: Set the number of particles
 
   double std_x = std[0];
   double std_y = std[1];
@@ -80,25 +79,32 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    double std_x = std_pos[0];
    double std_y = std_pos[1];
    double std_theta = std_pos[2];
+   double r;
+   double delta_theta;
+   double new_theta;
+   double deltaDist = velocity * delta_t;
    std::default_random_engine gen;
+
+   if (yaw_rate != 0.0){
+     r = velocity / yaw_rate;
+     delta_theta = yaw_rate*delta_t;
+   }
 
    for (int i = 0; i < num_particles; ++i)
    {
      Particle &p = particles[i];
      double theta = p.theta;
-     if (yaw_rate != 0.0)
+     if (abs(yaw_rate) > 0.001)
      {
-       double r = velocity / yaw_rate;
-       double delta_theta = yaw_rate*delta_t;
-       p.x = p.x + r * ( sin(theta + delta_theta) - sin(theta));
-       p.y = p.y + r * (cos(theta) - cos(theta + delta_theta));
-       p.theta = p.theta + delta_theta;
+       new_theta = theta + delta_theta;
+       p.x = p.x + r * ( sin(new_theta) - sin(theta));
+       p.y = p.y + r * (cos(theta) - cos(new_theta));
+       p.theta = new_theta;
      }
      else
      {
-       p.x = p.x + velocity * delta_t * cos(theta);
-       p.y = p.y + velocity * delta_t * sin(theta);
-       p.theta = p.theta;
+       p.x = p.x + deltaDist * cos(theta);
+       p.y = p.y + deltaDist * sin(theta);
      }
      //
      /*Add noise*/
@@ -198,8 +204,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
      /* Predict the sensor measurements to all the map landmarks within the
      sensor range for each particle.*/
+
+     /* Update the weights and resample */
+
+     auto start = high_resolution_clock::now();
      vector<LandmarkObs> predObss;
      predictObss(map_landmarks, sensor_range, p, predObss);
+     auto stop = high_resolution_clock::now();
+     auto duration = duration_cast<microseconds>(stop - start);
+     std::cout << "UpdateWeights: Predict measurements step time: "<<duration.count() << " microseconds"<<std::endl;
 
      // printf("predObss landmarks vector size:  %d\n", predObss.size());
      // for (int i_pred = 0; i_pred < predObss.size(); i_pred++){
@@ -227,7 +240,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
      /*Copy the association result to the current particle structure
      This will be used in the simulator to visualize the association result
      of the best particle*/
-     for (int i_obs = 0; i_obs < transObss.size(); i_obs++){
+     for (unsigned int i_obs = 0; i_obs < transObss.size(); i_obs++){
        LandmarkObs &transObs = transObss[i_obs];
        p.associations.push_back(transObs.id);
        p.sense_x.push_back(transObs.x);
@@ -362,7 +375,7 @@ string ParticleFilter::getSenseCoord(Particle best, string coord) {
 void ParticleFilter::transformObss(vector<LandmarkObs> const &observations,
                                    Particle const &p,
                                    vector<LandmarkObs> &transObss){
-  for (int i_obs = 0; i_obs < observations.size(); i_obs++){
+  for (unsigned int i_obs = 0; i_obs < observations.size(); i_obs++){
     LandmarkObs const &obs = observations[i_obs];
     LandmarkObs transObs;
     // printf ("Obs (In vehicle)(%d): %4.2f, %4.2f\n", obs.id, obs.x, obs.y);

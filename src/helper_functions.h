@@ -278,7 +278,7 @@ inline void writeToFile(std::string filename,
                                std::vector<LandmarkObs>& observations){
   std::ofstream ofs (filename, std::ofstream::out);
 
-  for (int i = 0; i < observations.size(); i++){
+  for (unsigned int i = 0; i < observations.size(); i++){
     ofs << observations[i].x << "," << observations[i].y << "\n";
   }
   ofs.close();

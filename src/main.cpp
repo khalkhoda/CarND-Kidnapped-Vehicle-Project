@@ -78,9 +78,13 @@ int main() {
             double previous_velocity = std::stod(j[1]["previous_velocity"].get<string>());
             double previous_yawrate = std::stod(j[1]["previous_yawrate"].get<string>());
 
+            auto start = high_resolution_clock::now();
             // std::cout << "Prediction step!!!" << std::endl;
             pf.prediction(delta_t, sigma_pos, previous_velocity, previous_yawrate);
             // std::cout << "Done: Calling Particle filter Prediction!!!" << std::endl;
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<microseconds>(stop - start);
+            std::cout << "Prediction step time "<<duration.count() << " microseconds"<<std::endl;
           }
           // receive noisy observation data from the simulator
           // sense_observations in JSON format
@@ -112,13 +116,18 @@ int main() {
           }
           // writeToFile("../data/observations_k.csv",noisy_observations);
 
-          // Update the weights and resample
-          // std::cout << "updateWeights step" << std::endl;
+          /* Update the weights and resample */
+          auto start = high_resolution_clock::now();
           pf.updateWeights(sensor_range, sigma_landmark, noisy_observations, map);
-          // std::cout << "Done: Calling updateWeights" << std::endl;
-          // std::cout << "Resample step" << std::endl;
+          auto stop = high_resolution_clock::now();
+          auto duration = duration_cast<microseconds>(stop - start);
+          std::cout << "updateWeights step time "<<duration.count() << " microseconds"<<std::endl;
+
+          start = high_resolution_clock::now();
           pf.resample();
-          // std::cout << "Done: Calling resample" << std::endl;
+          stop = high_resolution_clock::now();
+          duration = duration_cast<microseconds>(stop - start);
+          std::cout << "Resample step time "<<duration.count() << " microseconds"<<std::endl;
 
           // Calculate and output the average weighted error of the particle
           //   filter over all time steps so far.
@@ -136,8 +145,8 @@ int main() {
             weight_sum += particles[i].weight;
           }
 
-          std::cout << "highest w " << highest_weight << std::endl;
-          std::cout << "average w " << weight_sum/num_particles << std::endl;
+          // std::cout << "highest w " << highest_weight << std::endl;
+          // std::cout << "average w " << weight_sum/num_particles << std::endl;
 
           json msgJson;
           msgJson["best_particle_x"] = best_particle.x;
